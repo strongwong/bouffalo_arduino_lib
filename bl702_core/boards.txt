@@ -1,0 +1,24 @@
+############################################################
+# BL706 RISC-V BLE+ZigBee Chip
+############################################################
+
+
+STEP.name=BL706 Iot Board (BL706)
+
+STEP.platform=bl706iot
+STEP.build.board=bl706_iot
+
+STEP.build.extra_flags = -march=rv32imafc -mabi=ilp32f 
+STEP.compiler.c.extra_flags= 
+STEP.compiler.cpp.extra_flags= 
+STEP.ld.extra_flags = 
+
+
+STEP.upload.maximum_size=1040384
+STEP.upload.speed=2000000
+STEP.upload.tool=bflb_flashload
+
+STEP.build.mcu=bl702
+STEP.build.core=bl702
+STEP.build.variant=bl702_link_script
+

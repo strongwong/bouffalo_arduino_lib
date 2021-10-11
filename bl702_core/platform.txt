@@ -1,0 +1,135 @@
+############################################################
+# BL706 RISC-V BLE+ZigBee Chip
+############################################################
+
+name=BL706 RISC-V BLE+ZigBee Chip (BouffaloLab)
+version=0.0.1
+
+## Compiler global definitions
+compiler.path           = {runtime.tools.bflb_compiler.path}/riscv64_x86_64_mingw_gcc/bin/
+compiler.define= 
+###-DIDE=Arduino "-I{compiler.path}../riscv64-unknown-elf/include"
+
+build.extra_flags       =
+build.flags             = 
+
+compiler.c.cmd          = riscv64-unknown-elf-gcc
+compiler.c.flags        = -c -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles --std=gnu99 -Dbl706_iot -DARCH_RISCV -DBFLB_USE_HAL_DRIVER --specs=nosys.specs -Os -fdata-sections -ffunction-sections
+###-W -c   -fno-exceptions -fno-unwind-tables 
+compiler.c.extra_flags  = 
+compiler.elf.flags      =
+compiler.elf.cmd        = riscv64-unknown-elf-gcc
+
+compiler.cpp.cmd        = riscv64-unknown-elf-g++
+compiler.cpp.flags      = -W -c -Os -fdata-sections -ffunction-sections -fno-exceptions -fno-unwind-tables -fno-rtti --std=c++17 -Dbl706_iot -DARCH_RISCV -DBFLB_USE_HAL_DRIVER
+###--specs=nosys.specs 
+compiler.cpp.extra_flags = 
+
+
+compiler.ld.cmd = riscv64-unknown-elf-gcc
+compiler.ld.flags= -Wl,--gc-sections -static -lm --specs=nosys.specs
+#-Wl,--gc-sections -nostartfiles -g3 -fms-extensions -ffunction-sections -fdata-sections -Wall -Wchar-subscripts -std=c99 --specs=nano.specs -u _printf_float
+###
+compiler.ld.extra_flags=
+compiler.ldscript=bl702_flash.ld
+
+compiler.S.flags=-c -g -x assembler-with-cpp -flto -MMD
+#--specs=nosys.specs -Os -fno-builtin-printf -c
+compiler.S.cmd=riscv64-unknown-elf-as
+
+
+compiler.ar.cmd=riscv64-unknown-elf-ar
+compiler.ar.flags=-rcs
+
+compiler.objcopy.cmd=riscv64-unknown-elf-objcopy
+compiler.objcopy.eep.flags=-O ihex 
+
+compiler.elf2hex.cmd=riscv64-unknown-elf-objcopy
+
+compiler.dump.cmd = riscv64-unknown-elf-objdump
+
+compiler.size.path = {runtime.tools.bflb_binsize.path}
+compiler.size.cmd = binsize
+
+compiler.cpudef=-mprocessor=
+compiler.upload.cmd=bflb_flashload
+
+
+
+build.variant=bl702_link_script
+build.ldscript.path={build.variant.path}
+
+core.header=Arduino.h
+
+start.path=core\startup\GCC\entry.S.o
+
+compiler.c.elf.extra_flags= -I{build.core.path}
+compiler.S.extra_flags=
+compiler.cpp.extra_flags=
+compiler.ar.extra_flags=
+
+compiler.objcopy.bin.flags = -O binary
+compiler.objcopy.bin.extra_flags=
+
+compiler.elf2hex.flags = -O ihex
+compiler.elf2hex.extra_flags=
+
+compiler.dump.flags= --disassemble-all --section=.text --section=.text.startup --section=.data --section=.rodata --section=.sdata --section=.sdata2 --section=.init_array --section=.fini_array
+compiler.dump.extra_flags=
+
+
+## Compiler c files
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {build.flags} {compiler.c.flags} {compiler.define} {compiler.c.extra_flags} {build.extra_flags} "-I{build.core.path}/hal_drv/default_config" "-I{build.core.path}/hal_drv/inc" "-I{build.core.path}/regs" "-I{build.core.path}/risc-v/Core/Include" "-I{build.core.path}/startup" "-I{build.core.path}/std_drv/inc" "-I{build.core.path}/bl706_iot" {includes} "{source_file}" -o "{object_file}"
+
+## Compiler c++ files
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {build.flags} {compiler.cpp.flags} {compiler.define} {compiler.cpp.extra_flags} {build.extra_flags} "-I{build.core.path}/hal_drv/default_config" "-I{build.core.path}/hal_drv/inc" "-I{build.core.path}/regs" "-I{build.core.path}/risc-v/Core/Include" "-I{build.core.path}/startup" "-I{build.core.path}/std_drv/inc" "-I{build.core.path}/bl706_iot" {includes} "{source_file}" -o "{object_file}"
+
+## Compiler S files
+recipe.S.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.S.flags} {compiler.define} "{compiler.cpp.extra_flags}" {build.extra_flags} "-I{build.core.path}/hal_drv/default_config" "-I{build.core.path}/hal_drv/inc" "-I{build.core.path}/regs" "-I{build.core.path}/risc-v/Core/Include" "-I{build.core.path}/startup" "-I{build.core.path}/std_drv/inc" "-I{build.core.path}/bl706_iot" {includes} "{source_file}" -o "{object_file}"
+
+## Create archives
+archive_file_path={build.path}/{archive_file}
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}"  {compiler.ar.flags} {compiler.ar.extra_flags} "{archive_file_path}"  "{object_file}"
+
+## Combine gc-section,archives, and objects
+recipe.c.combine.pattern="{compiler.path}{compiler.ld.cmd}"  -T {build.ldscript.path}\{compiler.ldscript} {build.flags} {compiler.ld.flags} {build.extra_flags} "-Wl,-Map,{build.core.path}\{build.project_name}.map" -o "{build.core.path}\{build.project_name}.elf"  {object_files} "{build.path}\{archive_file}" "-L{build.path}" -lm
+
+## Create output files
+recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" {compiler.objcopy.bin.flags} {compiler.objcopy.bin.extra_flags} "{build.core.path}/{build.project_name}.elf" "{build.core.path}/{build.project_name}.bin"
+
+recipe.objcopy.hex.pattern="{compiler.path}{compiler.elf2hex.cmd}" {compiler.elf2hex.flags} {compiler.elf2hex.extra_flags} "{build.core.path}/{build.project_name}.elf"  "{build.core.path}/{build.project_name}.hex"
+
+##recipe.objcopy.dump.pattern="{compiler.path}{compiler.dump.cmd}" {compiler.dump.flags} {compiler.dump.extra_flags} "{build.core.path}/{build.project_name}.elf" >  "{build.core.path}/{build.project_name}.asm"
+
+## Save hex
+recipe.output.tmp_file={build.project_name}.hex
+recipe.output.save_file={build.project_name}.{build.variant}.hex
+
+
+## Compute size
+recipe.size.pattern="{compiler.size.path}/{compiler.size.cmd}"  "{build.core.path}/{build.project_name}.bin"
+recipe.size.regex=Total\s+([0-9]+).*
+
+## Preprocessor
+preproc.includes.flags=-w -x c++ -M -MG -MP
+recipe.preproc.includes="{compiler.path}{compiler.cpp.cmd}"  {compiler.cpp.flags} {preproc.includes.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {compiler.define}  "-I{build.core.path}/hal_drv/default_config" "-I{build.core.path}/hal_drv/inc" "-I{build.core.path}/regs" "-I{build.core.path}/risc-v/Core/Include" "-I{build.core.path}/startup/GCC" "-I{build.core.path}/std_drv/inc" {includes} "{source_file}"
+
+preproc.macros.flags= -w -x c++ -E -CC
+preprocessed_file_path=
+
+recipe.preproc.macros="{compiler.path}{compiler.c.cmd}" {preproc.macros.flags} -DARDUINO={runtime.ide.version} -D{build.board} -DARDUINO_ARCH_{build.arch} {compiler.define}  "-I{build.core.path}/hal_drv/default_config" "-I{build.core.path}/hal_drv/inc" "-I{build.core.path}/regs" "-I{build.core.path}/risc-v/Core/Include" "-I{build.core.path}/startup/GCC" "-I{build.core.path}/std_drv/inc" {includes} "{source_file}" -o "{preprocessed_file_path}"
+
+
+###############################################################################
+# flash loader
+###############################################################################
+
+tools.bflb_flashload.cmd=bflb_mcu_tool
+tools.bflb_flashload.path={runtime.tools.bflb_flashload.path}/bflb_flash_tool/
+
+tools.bflb_flashload.upload.params.verbose=
+tools.bflb_flashload.upload.params.quiet=
+tools.bflb_flashload.upload.protocol=UART
+
+
+tools.bflb_flashload.upload.pattern="{path}/{cmd}" --chipname=bl702 --port={serial.port} --baudrate={upload.speed} "{build.core.path}/{build.project_name}.bin"
